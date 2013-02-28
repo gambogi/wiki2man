@@ -1,0 +1,44 @@
+#!/usr/bin/python3
+"""Simple utility to take wiki pages and convert to troff
+"""
+import argparse
+import datetime
+
+parser = argparse.ArgumentParser(description='Convert a wiki page to a man page.')
+parser.add_argument('title', type=str, help='The title of the page.')
+parser.add_argument('-s', dest='section', help='The section of this man page')
+parser.add_argument('filename', type=str, help='The location of the wikipedia page')
+args = parser.parse_args()
+
+wikifile = open(args.filename)
+manfile = open('./'+args.title+'.'+str(args.section), 'w')
+
+if args.section == None:
+	section = 1
+else:
+	section = args.section
+
+manfile.write('.TH '+ args.title+' '+str(section)+' '+str(datetime.date.today())+'\n')
+
+for line in wikifile:
+	numEquals = 0
+	for ch in line:
+		if ch == '=':
+			numEquals += 1
+	numEquals /= 2
+	
+	if line[0] == '#' or line[0] == '*':
+		line = '.IP \"' + line.strip('*#= \n') + '\"'
+		
+	line = line.strip('*#= \n')
+	if numEquals == 1:
+		line = '.SH \"' + line +'\"' 
+	elif numEquals == 2:
+		line = '.SS \"' + line +'\"'
+	elif numEquals > 2: 
+		line = '.P \n.I \"' + line + '\"\n.P \n'
+	line = line.replace('[[','')
+	line = line.replace(']]','')
+	if len(line) > 0 and line[0] != '<': manfile.write(line+'\n')
+wikifile.close()
+manfile.close()
